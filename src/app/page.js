@@ -1,23 +1,26 @@
-"use client";
-
+"use client"
+  
 import { useState } from 'react';
 import { db } from "@/firebase/config";
 import { collection, addDoc } from "firebase/firestore";
-
+  
 export default function Home() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
+  const [user, setUser] = useState({ name: "", email: "", message: "" });
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState(null);
 
-  async function addDataToFirestore(name, email, message) {
+  function handleChange(e) {
+    const { name, value } = e.target;
+    setUser((prevUser) => ({
+      ...prevUser,
+      [name]: value
+    }));
+  }
+
+  async function addDataToFirestore(userData) {
     try {
-      const docRef = await addDoc(collection(db, "messages"), {
-        name: name,
-        email: email,
-        message: message,
-      });
+      const docRef = await addDoc(collection(db, "messages"), userData);
+      console.log(docRef);
       console.log("Document ID:", docRef.id);
       setSuccess(true);
     } catch (error) {
@@ -28,7 +31,7 @@ export default function Home() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    addDataToFirestore(name, email, message);
+    addDataToFirestore(user);
   };
 
   return (
@@ -38,8 +41,9 @@ export default function Home() {
           Name:
           <input
             type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+            name="name"
+            value={user.name}
+            onChange={handleChange}
           />
         </label>
         <br />
@@ -47,16 +51,18 @@ export default function Home() {
           Email:
           <input
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            name="email"
+            value={user.email}
+            onChange={handleChange}
           />
         </label>
         <br />
         <label>
           Message:
           <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            name="message"
+            value={user.message}
+            onChange={handleChange}
           />
         </label>
         <br />
