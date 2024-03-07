@@ -1,28 +1,92 @@
 "use client"
-import { useState } from "react";
-import { getStorage, ref, uploadBytes } from "firebase/storage";
+import { useState, useEffect } from "react";
+import { getStorage, ref, uploadBytes, listAll, getDownloadURL } from "firebase/storage";
 import { v4 } from "uuid";
 import { storage } from "@/firebase/config";
+import Image from "next/image";
 
 export default function Page() {
-  const storage = getStorage();
+  const storageRef = getStorage();
   const [uploadimg, setUploadimg] = useState(null);
+  const [imglist, setImglist] = useState([]);
+
+  const listImgRef = ref(storageRef, "/images");
+
+  useEffect(() => {
+    const fetchImageList = async () => {
+      try {
+        const res = await listAll(ref(storageRef, "/images"));
+
+        const downloadURLs = await Promise.all(
+          res.items.map(async (itemRef) => {
+            return await getDownloadURL(itemRef);
+          })
+        );
+
+        console.log(downloadURLs);
+
+        setImglist(downloadURLs);
+      } catch (error) {
+        console.error("Error listing images: ", error);
+      }
+    };
+
+    fetchImageList();
+  }, []);
 
   const handleclick = (e) => {
     if (uploadimg == null) {
       return;
     }
-    const imageref = ref(storage, `images/${uploadimg.name + v4()}`);
-    uploadBytes(imageref, uploadimg).then(() => {
-      console.log("image uploaded!");
-    });
+    const imageref = ref(storageRef, `images/${uploadimg.name + v4()}`);
+
+    uploadImage(imageref, uploadimg);
+  };
+
+  const uploadImage = async (imageref, uploadimg) => {
+    try {
+      await uploadBytes(imageref, uploadimg);
+      console.log("Image uploaded successfully!");
+      // After uploading, refresh the image list
+      refreshImageList();
+    } catch (error) {
+      console.error("Error uploading image: ", error);
+    }
+  };
+
+  const refreshImageList = async () => {
+    try {
+      const res = await listAll(ref(storageRef, "/images"));
+
+      const downloadURLs = await Promise.all(
+        res.items.map(async (itemRef) => {
+          return await getDownloadURL(itemRef);
+        })
+      );
+
+      console.log(downloadURLs);
+
+      setImglist(downloadURLs);
+    } catch (error) {
+      console.error("Error refreshing image list: ", error);
+    }
   };
 
   return (
-    <div>
-      <h1>ADD AN IMAGE!</h1>
-      <input type="file" onChange={(e) => { setUploadimg(e.target.files[0]); }} />
-      <button onClick={handleclick}>Upload Image</button>
+    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif", backgroundColor: "#f0f0f0", borderRadius: "10px" }}>
+      <h1 style={{ marginBottom: "20px", color: "#333", textAlign: "center" }}>ADD AN IMAGE!</h1>
+      <input type="file" style={{ marginBottom: "10px", display: "block", width: "100%", padding: "10px", borderRadius: "5px", border: "1px solid #ccc" }} onChange={(e) => setUploadimg(e.target.files[0])} />
+      <button onClick={handleclick} style={{ margin: "10px auto", padding: "10px 20px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", display: "block" }}>Upload Image</button>
+      <div>
+        <h2 style={{ marginTop: "20px", color: "#333" }}>Image List</h2>
+        <div style={{ display: "flex", flexWrap: "wrap" }}>
+          {imglist.map((imgUrl, index) => (
+            <div key={index} style={{ margin: "10px", border: "1px solid #ccc", borderRadius: "5px", overflow: "hidden", boxShadow: "0 0 5px rgba(0, 0, 0, 0.3)" }}>
+              <Image src={imgUrl} alt={`Image ${index}`} height={400} width={300} />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
