@@ -1,9 +1,32 @@
 "use client"
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { getStorage, ref, uploadBytes, listAll, getDownloadURL } from "firebase/storage";
 import { v4 } from "uuid";
 import { storage } from "@/firebase/config";
-import Image from "next/image";
+import NextImage from "next/image";
+
+// Custom Suspense component for loading images
+const SuspenseImage = ({ src, alt, height, width }) => {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      setLoaded(true);
+    };
+    img.src = src;
+  }, [src]);
+
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      {loaded ? (
+        <NextImage src={src} alt={alt} height={height} width={width} />
+      ) : (
+        <div  style={{ height: "300px" , width:"200px" , margin: "10px", border: "1px solid #ccc", borderRadius: "5px", overflow: "hidden", boxShadow: "0 0 5px rgba(0, 0, 0, 0.3)" }}>Loading...</div>
+      )}
+    </Suspense>
+  );
+};
 
 export default function Page() {
   const storageRef = getStorage();
@@ -46,7 +69,7 @@ export default function Page() {
   const uploadImage = async (imageref, uploadimg) => {
     try {
       await uploadBytes(imageref, uploadimg);
-      console.log("Image uploaded successfully!");
+      window.alert("Image Added Successfully !")
       // After uploading, refresh the image list
       refreshImageList();
     } catch (error) {
@@ -82,7 +105,7 @@ export default function Page() {
         <div style={{ display: "flex", flexWrap: "wrap" }}>
           {imglist.map((imgUrl, index) => (
             <div key={index} style={{ margin: "10px", border: "1px solid #ccc", borderRadius: "5px", overflow: "hidden", boxShadow: "0 0 5px rgba(0, 0, 0, 0.3)" }}>
-              <Image src={imgUrl} alt={`Image ${index}`} height={400} width={300} />
+              <SuspenseImage src={imgUrl} alt={`Image ${index}`} height={400} width={300} />
             </div>
           ))}
         </div>
