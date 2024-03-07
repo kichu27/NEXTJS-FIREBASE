@@ -1,9 +1,9 @@
-"use client";
-
+"use client"
+  
 import { useState } from 'react';
 import { db } from "@/firebase/config";
 import { collection, addDoc } from "firebase/firestore";
-
+  
 export default function Home() {
   const [user, setUser] = useState({ name: "", email: "", message: "" });
   const [success, setSuccess] = useState(false);
